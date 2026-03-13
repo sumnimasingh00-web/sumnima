@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scientific PM Tracker — Microsoft 365</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f3f2f1; color: #323130; font-size: 13px; }
+
+  /* TOP BAR */
+  .topbar { background: #0078d4; padding: 0 20px; height: 48px; display: flex; align-items: center; gap: 16px; }
+  .topbar .title { color: white; font-size: 15px; font-weight: 600; }
+  .topbar .subtitle { color: rgba(255,255,255,0.75); font-size: 12px; }
+
+  /* COMMAND BAR */
+  .commandbar { background: white; border-bottom: 1px solid #edebe9; padding: 6px 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .cmd-btn { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid #8a8886; border-radius: 2px; background: white; cursor: pointer; font-size: 12px; color: #323130; font-family: 'Segoe UI', sans-serif; }
+  .cmd-btn:hover { background: #f3f2f1; }
+  .cmd-btn.primary { background: #0078d4; color: white; border-color: #0078d4; }
+  .cmd-sep { width: 1px; height: 24px; background: #edebe9; margin: 0 4px; }
+  .view-tabs { margin-left: auto; display: flex; gap: 2px; }
+  .view-tab { padding: 5px 12px; border-radius: 2px; cursor: pointer; font-size: 12px; color: #605e5c; }
+  .view-tab.active { background: #deecf9; color: #0078d4; font-weight: 600; }
+
+  /* MAIN */
+  .main { padding: 16px 20px; }
+
+  /* PAGE TABS */
+  .page-tabs { display: flex; gap: 0; border-bottom: 2px solid #edebe9; margin-bottom: 16px; }
+  .page-tab { padding: 8px 18px; cursor: pointer; font-size: 13px; color: #605e5c; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap; }
+  .page-tab.active { color: #0078d4; border-bottom-color: #0078d4; font-weight: 600; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* SUMMARY CARDS */
+  .cards { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .card { background: white; border-radius: 4px; padding: 12px 16px; min-width: 120px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-top: 3px solid #0078d4; }
+  .card.red { border-color: #a4262c; } .card.green { border-color: #107c10; } .card.orange { border-color: #ca5010; } .card.purple { border-color: #8764b8; }
+  .card-num { font-size: 26px; font-weight: 700; color: #323130; line-height: 1.1; }
+  .card-label { font-size: 11px; color: #605e5c; margin-top: 2px; }
+
+  /* PANEL */
+  .panel-section { background: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 14px; overflow: hidden; }
+  .panel-title { padding: 10px 16px; font-weight: 600; font-size: 12px; color: #323130; background: #faf9f8; border-bottom: 1px solid #edebe9; display: flex; align-items: center; gap: 8px; }
+
+  /* TABLES */
+  .list-table { width: 100%; border-collapse: collapse; }
+  .list-table th { background: #faf9f8; border-bottom: 2px solid #edebe9; padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #605e5c; white-space: nowrap; }
+  .list-table td { padding: 7px 10px; border-bottom: 1px solid #f3f2f1; vertical-align: middle; font-size: 12px; }
+  .list-table tr:hover td { background: #f3f2f1; }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .badge-high    { background: #fde7e9; color: #a4262c; }
+  .badge-medium  { background: #fff4ce; color: #7a4c00; }
+  .badge-low     { background: #dff6dd; color: #107c10; }
+  .badge-progress { background: #deecf9; color: #0078d4; }
+  .badge-notstart { background: #f3f2f1; color: #605e5c; }
+  .badge-complete { background: #dff6dd; color: #107c10; }
+  .badge-overdue  { background: #fde7e9; color: #a4262c; }
+  .badge-pending  { background: #fff4ce; color: #7a4c00; }
+
+  /* CATEGORY */
+  .cat { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-ext { background: #0078d4; } .dot-grant { background: #8764b8; } .dot-int { background: #038387; }
+  .dot-res { background: #ca5010; } .dot-comm { background: #e3008c; } .dot-event { background: #107c10; }
+
+  /* PERSON */
+  .person { display: inline-flex; align-items: center; gap: 5px; }
+  .avatar { width: 24px; height: 24px; border-radius: 50%; background: #0078d4; color: white; font-size: 9px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .av-g { background: #038387; } .av-p { background: #8764b8; } .av-o { background: #ca5010; } .av-r { background: #a4262c; }
+
+  /* DATES */
+  .due-soon { color: #a4262c; font-weight: 600; }
+  .due-ok   { color: #107c10; }
+  .due-norm { color: #323130; }
+  .task-title { font-weight: 500; color: #0078d4; cursor: pointer; }
+  .task-title:hover { text-decoration: underline; }
+
+  /* GANTT */
+  .gantt-wrap { overflow-x: auto; padding: 0; }
+  .gantt-table { border-collapse: collapse; min-width: 900px; width: 100%; }
+  .gantt-table th { background: #faf9f8; border-bottom: 2px solid #edebe9; padding: 6px 8px; font-size: 11px; font-weight: 600; color: #605e5c; text-align: center; }
+  .gantt-table th.left { text-align: left; }
+  .gantt-table td { padding: 5px 8px; border-bottom: 1px solid #f3f2f1; font-size: 11px; vertical-align: middle; }
+  .gantt-table tr:hover td { background: #f9f9f9; }
+  .gantt-cell { position: relative; height: 22px; }
+  .gantt-bar { position: absolute; height: 14px; top: 4px; border-radius: 3px; display: flex; align-items: center; padding: 0 5px; font-size: 10px; color: white; font-weight: 600; white-space: nowrap; overflow: hidden; }
+  .gantt-today { position: absolute; top: 0; bottom: 0; width: 2px; background: #a4262c; opacity: 0.6; }
+  .day-col { width: 28px; min-width: 28px; }
+  .day-weekend { background: #faf9f8; }
+  .day-today { background: #deecf9; }
+
+  /* KANBAN */
+  .kanban { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+  .kanban-col { min-width: 210px; background: #f3f2f1; border-radius: 4px; padding: 10px; }
+  .kanban-col-header { font-weight: 600; font-size: 12px; color: #323130; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .kanban-card { background: white; border-radius: 3px; padding: 8px 10px; margin-bottom: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); border-left: 3px solid #0078d4; font-size: 11px; cursor: pointer; }
+  .kanban-card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+  .kc-high { border-left-color: #a4262c; } .kc-med { border-left-color: #ca5010; }
+  .kanban-card-title { font-weight: 500; color: #323130; margin-bottom: 5px; line-height: 1.3; }
+  .kanban-card-meta { display: flex; justify-content: space-between; align-items: center; }
+
+  /* COMM LOG */
+  .channel-chip { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; background: #f3f2f1; border-radius: 10px; font-size: 11px; }
+  .followup-yes { color: #a4262c; font-weight: 600; }
+  .followup-no  { color: #107c10; }
+
+  /* CALENDAR */
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; padding: 12px; }
+  .cal-day-hdr { font-size: 10px; font-weight: 600; color: #605e5c; text-align: center; padding: 4px; }
+  .cal-day { min-height: 64px; background: #faf9f8; border-radius: 3px; border: 1px solid #edebe9; padding: 4px; }
+  .cal-day.today { background: #deecf9; border-color: #0078d4; }
+  .cal-day.has-tasks { border-color: #a4262c; }
+  .cal-day-num { font-size: 12px; font-weight: 600; color: #323130; margin-bottom: 3px; }
+  .cal-day.today .cal-day-num { color: #0078d4; }
+  .cal-event { font-size: 9px; background: #0078d4; color: white; border-radius: 2px; padding: 1px 4px; margin-bottom: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .cal-event.high-ev { background: #a4262c; }
+  .cal-event.med-ev  { background: #ca5010; }
+  .cal-event.low-ev  { background: #107c10; }
+  .cal-empty { opacity: 0; }
+
+  /* ASSIGNMENTS */
+  .assign-table { width: 100%; border-collapse: collapse; }
+  .assign-table th { background: #faf9f8; border-bottom: 2px solid #edebe9; padding: 8px 12px; font-size: 11px; font-weight: 600; color: #605e5c; text-align: left; }
+  .assign-table td { padding: 8px 12px; border-bottom: 1px solid #f3f2f1; font-size: 12px; vertical-align: middle; }
+  .assign-table tr:hover td { background: #f3f2f1; }
+  .progress-wrap { width: 100px; background: #edebe9; border-radius: 4px; height: 8px; display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .progress-bar { height: 8px; border-radius: 4px; }
+  .pb-blue   { background: #0078d4; }
+  .pb-green  { background: #107c10; }
+  .pb-orange { background: #ca5010; }
+
+  /* GRID HELPERS */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media(max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  .filter-bar { background: white; border-bottom: 1px solid #edebe9; padding: 6px 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .filter-pill { padding: 3px 10px; border: 1px solid #8a8886; border-radius: 12px; font-size: 11px; cursor: pointer; background: white; }
+  .filter-pill.active { background: #deecf9; border-color: #0078d4; color: #0078d4; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="title">🗂 Scientific Program Manager — Project Tracker</span>
+  <span class="subtitle">Microsoft Lists · SharePoint · Teams</span>
+</div>
+
+<div class="commandbar">
+  <button class="cmd-btn primary">＋ New item</button>
+  <button class="cmd-btn">✏️ Edit in grid</button>
+  <button class="cmd-btn">⇧ Share</button>
+  <button class="cmd-btn">📤 Export to Excel</button>
+  <div class="cmd-sep"></div>
+  <button class="cmd-btn">🔔 Alert me</button>
+  <button class="cmd-btn">⚙️ Power Automate</button>
+  <div class="view-tabs">
+    <div class="view-tab active" onclick="switchView('list')">☰ List</div>
+    <div class="view-tab" onclick="switchView('board')">▦ Board</div>
+    <div class="view-tab" onclick="switchView('gantt')">📊 Timeline</div>
+    <div class="view-tab" onclick="switchView('calendar')">📅 Calendar</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <span style="font-size:11px;color:#605e5c;">Filter:</span>
+  <div class="filter-pill active">All (8)</div>
+  <div class="filter-pill">🔴 High Priority</div>
+  <div class="filter-pill">⏳ Due This Week</div>
+  <div class="filter-pill">📋 Grant Dev</div>
+  <div class="filter-pill">🔵 External</div>
+</div>
+
+<div class="main">
+
+  <!-- SUMMARY CARDS -->
+  <div class="cards">
+    <div class="card red"><div class="card-num">4</div><div class="card-label">High Priority</div></div>
+    <div class="card"><div class="card-num">2</div><div class="card-label">In Progress</div></div>
+    <div class="card orange"><div class="card-num">3</div><div class="card-label">Due This Week</div></div>
+    <div class="card green"><div class="card-num">0</div><div class="card-label">Complete</div></div>
+    <div class="card purple"><div class="card-num">4</div><div class="card-label">Pending Follow-ups</div></div>
+    <div class="card"><div class="card-num">8</div><div class="card-label">Total Tasks</div></div>
+  </div>
+
+  <!-- PAGE TABS -->
+  <div class="page-tabs">
+    <div class="page-tab active"   onclick="switchTab('tracker')">📋 Task Tracker</div>
+    <div class="page-tab"          onclick="switchTab('timeline')">📊 Project Timelines</div>
+    <div class="page-tab"          onclick="switchTab('assignments')">👤 Task Assignments</div>
+    <div class="page-tab"          onclick="switchTab('commlog')">📨 Communication Log</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: TASK TRACKER -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div id="tab-tracker" class="tab-content active">
+
+    <!-- LIST VIEW -->
+    <div id="view-list">
+      <div class="panel-section">
+        <div class="panel-title">▾ All Tasks <span style="margin-left:auto;font-weight:400;color:#605e5c;font-size:11px;">8 items · sorted by Priority</span></div>
+        <table class="list-table">
+          <thead><tr>
+            <th>Task</th><th>Category</th><th>Owner</th><th>Due Date</th>
+            <th>Priority</th><th>Status</th><th>Next Action</th><th>Collaborators</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="task-title">Follow up with Company XYZ on proposal</span></td>
+              <td><div class="cat"><div class="dot dot-ext"></div>External</div></td>
+              <td><div class="person"><div class="avatar">SS</div> Sumnima</div></td>
+              <td><span class="due-soon">Mar 09</span></td>
+              <td><span class="badge badge-high">High</span></td>
+              <td><span class="badge badge-progress">In Progress</span></td>
+              <td>Reply noting incomplete sections; propose next steps</td>
+              <td>XYZ Contact</td>
+            </tr>
+            <tr>
+              <td><span class="task-title">Circulate meeting minutes &amp; action items</span></td>
+              <td><div class="cat"><div class="dot dot-int"></div>Internal</div></td>
+              <td><div class="person"><div class="avatar">SS</div> Sumnima</div></td>
+              <td><span class="due-soon">Mar 07</span></td>
+              <td><span class="badge badge-high">High</span></td>
+              <td><span class="badge badge-progress">In Progress</span></td>
+              <td>Finalize minutes; distribute to all attendees</td>
+              <td>All attendees</td>
+            </tr>
+            <tr>
+              <td><span class="task-title">Reach out to Donald &amp; Micky — PCF grant</span></td>
+              <td><div class="cat"><div class="dot dot-grant"></div>Grant Dev</div></td>
+              <td><div class="person"><div class="avatar av-p">SS</div> Sumnima</div></td>
+              <td><span class="due-soon">Mar 11</span></td>
+              <td><span class="badge badge-high">High</span></td>
+              <td><span class="badge badge-notstart">Not Started</span></td>
+              <td>Draft outreach; confirm interest</td>
+              <td>Donald, Micky</td>
+            </tr>
+            <tr>
+              <td><span class="task-title">Develop plan to advance new Melanoma project proposal</span></td>
+              <td><div class="cat"><div class="dot dot-grant"></div>Grant Dev</div></td>
+              <td><div class="person"><div class="avatar av-p">SS</div> Sumnima</div></td>
+              <td><span class="due-norm">Mar 20</span></td>
+              <td><span class="badge badge-high">High</span></td>
+              <td><span class="badge badge-notstart">Not Started</span></td>
+              <td>Outline milestones, roles, timeline; kickoff</td>
+              <td>PI, Melanoma team</td>
+            </tr>
+            <tr>
+              <td><span class="task-title">Schedule follow-up meeting with Minnie</span></td>
+              <td><div class="cat"><div class="dot dot-int"></div>Internal</div></td>
+              <td><div class="person"><div class="avatar av-g">SS</div> Sumnima</div></td>
+              <td><span class="due-soon">Mar 09</span></td>
+              <td><span class="badge badge-medium">Medium</span></td>
+              <td><span class="badge badge-notstart">Not Started</span></td>
+              <td>Send calendar invite with agenda</td>
+              <td>Minnie</td>
+            </tr>
+            <tr>
+              <td><span class="task-title">Prepare post-meeting quarterly initiative newsletter</span></td>
+              <td><div class="cat"><div class="dot dot-comm"></div>Comms</div></td>
+              <td><div class="person"><div class="avatar">SS</div> Sumnima</div></td>
+              <td><span class="due-norm">Mar 13</span></td>
+              <td><span class="badge badge-medium">Medium</span></td>
+              <td><span class="badge badge-notstart">Not Started</span></td>
+              <td>Draft; circulate for review; send</td>
+              <td>PI, team leads</td>
+            </tr>
+            <tr>
+              <td><span class="task-title">Send ASCO save-the-date</span></td>
+              <td><div class="cat"><div class="dot dot-event"></div>Event</div></td>
+              <td><div class="person"><div class="avatar">SS</div> Sumnima</div></td>
+              <td><span class="due-norm">Mar 11</span></td>
+              <td><span class="badge badge-medium">Medium</span></td>
+              <td><span class="badge badge-notstart">Not Started</span></td>
+              <td>Confirm dates; draft &amp; send to group</td>
+              <td>Full team</td>
+            </tr>
+            <tr>
+              <td><span class="task-title">Schedule meeting to present Lung Cancer results (next month)</span></td>
+              <td><div class="cat"><div class="dot dot-res"></div>Research</div></td>
+              <td><div class="person"><div class="avatar">SS</div> Sumnima</div></td>
+              <td><span class="due-ok">Apr 06</span></td>
+              <td><span class="badge badge-medium">Medium</span></td>
+              <td><span class="badge badge-notstart">Not Started</span></td>
+              <td>Book room/Zoom; confirm date with analysis team</td>
+              <td>Analysis team, PI</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BOARD VIEW -->
+    <div id="view-board" style="display:none;">
+      <div class="kanban">
+        <div class="kanban-col">
+          <div class="kanban-col-header">Not Started <span style="background:#edebe9;border-radius:10px;padding:1px 7px;font-size:11px;">6</span></div>
+          <div class="kanban-card kc-high"><div class="kanban-card-title">Reach out to Donald &amp; Micky — PCF grant</div><div class="kanban-card-meta"><span class="badge badge-high" style="font-size:10px;">High</span><span style="font-size:10px;color:#605e5c;">Mar 11</span></div></div>
+          <div class="kanban-card kc-high"><div class="kanban-card-title">Develop plan to advance new Melanoma project proposal</div><div class="kanban-card-meta"><span class="badge badge-high" style="font-size:10px;">High</span><span style="font-size:10px;color:#605e5c;">Mar 20</span></div></div>
+          <div class="kanban-card kc-med"><div class="kanban-card-title">Schedule follow-up with Minnie</div><div class="kanban-card-meta"><span class="badge badge-medium" style="font-size:10px;">Med</span><span style="font-size:10px;color:#605e5c;">Mar 09</span></div></div>
+          <div class="kanban-card kc-med"><div class="kanban-card-title">Quarterly newsletter</div><div class="kanban-card-meta"><span class="badge badge-medium" style="font-size:10px;">Med</span><span style="font-size:10px;color:#605e5c;">Mar 13</span></div></div>
+          <div class="kanban-card kc-med"><div class="kanban-card-title">ASCO save-the-date</div><div class="kanban-card-meta"><span class="badge badge-medium" style="font-size:10px;">Med</span><span style="font-size:10px;color:#605e5c;">Mar 11</span></div></div>
+          <div class="kanban-card"><div class="kanban-card-title">Lung Cancer results meeting (next month)</div><div class="kanban-card-meta"><span class="badge badge-medium" style="font-size:10px;">Med</span><span style="font-size:10px;color:#605e5c;">Apr 06</span></div></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-header">In Progress <span style="background:#deecf9;border-radius:10px;padding:1px 7px;font-size:11px;color:#0078d4;">2</span></div>
+          <div class="kanban-card kc-high"><div class="kanban-card-title">Follow up with Company XYZ on proposal</div><div class="kanban-card-meta"><span class="badge badge-high" style="font-size:10px;">High</span><span class="due-soon" style="font-size:10px;">Mar 09</span></div></div>
+          <div class="kanban-card kc-high"><div class="kanban-card-title">Circulate meeting minutes &amp; action items</div><div class="kanban-card-meta"><span class="badge badge-high" style="font-size:10px;">High</span><span class="due-soon" style="font-size:10px;">Mar 07</span></div></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-header">Complete <span style="background:#dff6dd;border-radius:10px;padding:1px 7px;font-size:11px;color:#107c10;">0</span></div>
+          <div style="font-size:11px;color:#605e5c;text-align:center;padding:12px;">No completed tasks yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GANTT STUB inside list tab -->
+    <div id="view-gantt-list" style="display:none;"></div>
+
+    <!-- CALENDAR VIEW -->
+    <div id="view-calendar" style="display:none;">
+      <div class="panel-section">
+        <div class="panel-title">📅 March 2026</div>
+        <div class="cal-grid">
+          <div class="cal-day-hdr">Mon</div><div class="cal-day-hdr">Tue</div><div class="cal-day-hdr">Wed</div>
+          <div class="cal-day-hdr">Thu</div><div class="cal-day-hdr">Fri</div><div class="cal-day-hdr">Sat</div><div class="cal-day-hdr">Sun</div>
+          <!-- Row 1 -->
+          <div class="cal-day"><div class="cal-day-num">2</div></div>
+          <div class="cal-day"><div class="cal-day-num">3</div></div>
+          <div class="cal-day"><div class="cal-day-num">4</div></div>
+          <div class="cal-day"><div class="cal-day-num">5</div></div>
+          <div class="cal-day today"><div class="cal-day-num">6</div><div class="cal-event" style="background:#0078d4;font-size:9px;">Today</div></div>
+          <div class="cal-day" style="background:#f9f9f9;"><div class="cal-day-num" style="color:#bbb;">7</div><div class="cal-event high-ev">Minutes due</div></div>
+          <div class="cal-day" style="background:#f9f9f9;"><div class="cal-day-num" style="color:#bbb;">8</div></div>
+          <!-- Row 2 -->
+          <div class="cal-day has-tasks"><div class="cal-day-num">9</div><div class="cal-event high-ev">XYZ proposal</div><div class="cal-event med-ev">Minnie mtg</div></div>
+          <div class="cal-day"><div class="cal-day-num">10</div></div>
+          <div class="cal-day has-tasks"><div class="cal-day-num">11</div><div class="cal-event high-ev">PCF outreach</div><div class="cal-event med-ev">ASCO save-date</div></div>
+          <div class="cal-day"><div class="cal-day-num">12</div></div>
+          <div class="cal-day has-tasks"><div class="cal-day-num">13</div><div class="cal-event med-ev">Newsletter</div></div>
+          <div class="cal-day" style="background:#f9f9f9;"><div class="cal-day-num" style="color:#bbb;">14</div></div>
+          <div class="cal-day" style="background:#f9f9f9;"><div class="cal-day-num" style="color:#bbb;">15</div></div>
+          <!-- Row 3 -->
+          <div class="cal-day"><div class="cal-day-num">16</div></div>
+          <div class="cal-day"><div class="cal-day-num">17</div></div>
+          <div class="cal-day"><div class="cal-day-num">18</div></div>
+          <div class="cal-day"><div class="cal-day-num">19</div></div>
+          <div class="cal-day has-tasks"><div class="cal-day-num">20</div><div class="cal-event high-ev">Melanoma plan</div></div>
+          <div class="cal-day" style="background:#f9f9f9;"><div class="cal-day-num" style="color:#bbb;">21</div></div>
+          <div class="cal-day" style="background:#f9f9f9;"><div class="cal-day-num" style="color:#bbb;">22</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-tracker -->
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: PROJECT TIMELINES (GANTT) -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div id="tab-timeline" class="tab-content">
+    <div class="panel-section">
+      <div class="panel-title">📊 Project Timeline — March 2026 <span style="margin-left:auto;font-weight:400;font-size:11px;color:#605e5c;">Today: Mar 6 &nbsp;|&nbsp; Red line = today</span></div>
+      <div class="gantt-wrap">
+        <table class="gantt-table">
+          <thead>
+            <tr>
+              <th class="left" style="min-width:200px;width:200px;">Project / Task</th>
+              <th class="left" style="min-width:80px;">Owner</th>
+              <th class="left" style="min-width:70px;">Status</th>
+              <!-- Days 6–20 -->
+              <th class="day-col day-today">6</th>
+              <th class="day-col day-weekend">7</th>
+              <th class="day-col day-weekend">8</th>
+              <th class="day-col">9</th>
+              <th class="day-col">10</th>
+              <th class="day-col">11</th>
+              <th class="day-col">12</th>
+              <th class="day-col">13</th>
+              <th class="day-col day-weekend">14</th>
+              <th class="day-col day-weekend">15</th>
+              <th class="day-col">16</th>
+              <th class="day-col">17</th>
+              <th class="day-col">18</th>
+              <th class="day-col">19</th>
+              <th class="day-col">20</th>
+              <th style="min-width:50px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Helper: bar spans from col offset (1=day6) to end col -->
+            <!-- Circulate minutes: due Mar 7, started today -->
+            <tr>
+              <td><span class="task-title">Circulate meeting minutes</span></td>
+              <td><div class="person"><div class="avatar" style="width:18px;height:18px;font-size:8px;">SS</div></div></td>
+              <td><span class="badge badge-progress" style="font-size:10px;">In Progress</span></td>
+              <td colspan="2" style="padding:0;">
+                <div style="position:relative;height:22px;">
+                  <div class="gantt-bar" style="left:0;width:56px;background:#a4262c;">Minutes</div>
+                </div>
+              </td>
+              <td colspan="13"></td><td></td>
+            </tr>
+            <!-- XYZ: Mar 6–9 -->
+            <tr>
+              <td><span class="task-title">Company XYZ proposal follow-up</span></td>
+              <td><div class="person"><div class="avatar" style="width:18px;height:18px;font-size:8px;">SS</div></div></td>
+              <td><span class="badge badge-progress" style="font-size:10px;">In Progress</span></td>
+              <td colspan="4" style="padding:0;">
+                <div style="position:relative;height:22px;">
+                  <div class="gantt-bar" style="left:0;width:112px;background:#a4262c;">XYZ</div>
+                </div>
+              </td>
+              <td colspan="11"></td><td></td>
+            </tr>
+            <!-- Minnie: Mar 6–9 -->
+            <tr>
+              <td><span class="task-title">Schedule meeting — Minnie</span></td>
+              <td><div class="person"><div class="avatar av-g" style="width:18px;height:18px;font-size:8px;">SS</div></div></td>
+              <td><span class="badge badge-notstart" style="font-size:10px;">Not Started</span></td>
+              <td colspan="4" style="padding:0;">
+                <div style="position:relative;height:22px;">
+                  <div class="gantt-bar" style="left:0;width:112px;background:#038387;">Minnie</div>
+                </div>
+              </td>
+              <td colspan="11"></td><td></td>
+            </tr>
+            <!-- PCF: Mar 6–11 -->
+            <tr>
+              <td><span class="task-title">PCF grant outreach — Donald &amp; Micky</span></td>
+              <td><div class="person"><div class="avatar av-p" style="width:18px;height:18px;font-size:8px;">SS</div></div></td>
+              <td><span class="badge badge-notstart" style="font-size:10px;">Not Started</span></td>
+              <td colspan="6" style="padding:0;">
+                <div style="position:relative;height:22px;">
+                  <div class="gantt-bar" style="left:0;width:168px;background:#8764b8;">PCF outreach</div>
+                </div>
+              </td>
+              <td colspan="9"></td><td></td>
+            </tr>
+            <!-- ASCO: Mar 6–11 -->
+            <tr>
+              <td><span class="task-title">ASCO save-the-date</span></td>
+              <td><div class="person"><div class="avatar" style="width:18px;height:18px;font-size:8px;">SS</div></div></td>
+              <td><span class="badge badge-notstart" style="font-size:10px;">Not Started</span></td>
+              <td colspan="6" style="padding:0;">
+                <div style="position:relative;height:22px;">
+                  <div class="gantt-bar" style="left:0;width:168px;background:#107c10;">ASCO</div>
+                </div>
+              </td>
+              <td colspan="9"></td><td></td>
+            </tr>
+            <!-- Newsletter: Mar 6–13 -->
+            <tr>
+              <td><span class="task-title">Quarterly newsletter</span></td>
+              <td><div class="person"><div class="avatar" style="width:18px;height:18px;font-size:8px;">SS</div></div></td>
+              <td><span class="badge badge-notstart" style="font-size:10px;">Not Started</span></td>
+              <td colspan="8" style="padding:0;">
+                <div style="position:relative;height:22px;">
+                  <div class="gantt-bar" style="left:0;width:224px;background:#e3008c;">Newsletter</div>
+                </div>
+              </td>
+              <td colspan="7"></td><td></td>
+            </tr>
+            <!-- Melanoma: Mar 6–20 -->
+            <tr>
+              <td><span class="task-title">Advance new Melanoma project proposal</span></td>
+              <td><div class="person"><div class="avatar av-p" style="width:18px;height:18px;font-size:8px;">SS</div></div></td>
+              <td><span class="badge badge-notstart" style="font-size:10px;">Not Started</span></td>
+              <td colspan="15" style="padding:0;">
+                <div style="position:relative;height:22px;">
+                  <div class="gantt-bar" style="left:0;width:418px;background:#8764b8;">Melanoma proposal plan</div>
+                </div>
+              </td>
+              <td></td>
+            </tr>
+            <!-- Lung Cancer: Mar 6 – Apr 6 (just show arrow) -->
+            <tr>
+              <td><span class="task-title">Lung Cancer results meeting (next month)</span></td>
+              <td><div class="person"><div class="avatar av-o" style="width:18px;height:18px;font-size:8px;">SS</div></div></td>
+              <td><span class="badge badge-notstart" style="font-size:10px;">Not Started</span></td>
+              <td colspan="15" style="padding:0;">
+                <div style="position:relative;height:22px;">
+                  <div class="gantt-bar" style="left:0;width:418px;background:#ca5010;opacity:0.6;">Lung Cancer (scheduling → Apr 6)</div>
+                </div>
+              </td>
+              <td style="font-size:10px;color:#ca5010;">→ Apr 6</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">🔑 Timeline Legend</div>
+      <div style="padding:10px 16px;display:flex;gap:16px;flex-wrap:wrap;font-size:11px;">
+        <div style="display:flex;align-items:center;gap:5px;"><div style="width:18px;height:10px;background:#a4262c;border-radius:2px;"></div> High Priority / Overdue risk</div>
+        <div style="display:flex;align-items:center;gap:5px;"><div style="width:18px;height:10px;background:#8764b8;border-radius:2px;"></div> Grant Development</div>
+        <div style="display:flex;align-items:center;gap:5px;"><div style="width:18px;height:10px;background:#038387;border-radius:2px;"></div> Internal Coordination</div>
+        <div style="display:flex;align-items:center;gap:5px;"><div style="width:18px;height:10px;background:#107c10;border-radius:2px;"></div> External Event</div>
+        <div style="display:flex;align-items:center;gap:5px;"><div style="width:18px;height:10px;background:#e3008c;border-radius:2px;"></div> Communications</div>
+        <div style="display:flex;align-items:center;gap:5px;"><div style="width:18px;height:10px;background:#ca5010;border-radius:2px;opacity:0.6;"></div> Research (longer horizon)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- TAB 3: TASK ASSIGNMENTS -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div id="tab-assignments" class="tab-content">
+    <div class="two-col">
+      <div class="panel-section">
+        <div class="panel-title">👤 Tasks by Owner</div>
+        <table class="assign-table">
+          <thead><tr><th>Person</th><th>Role</th><th>Tasks Assigned</th><th>Workload</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="person"><div class="avatar">SS</div> Sumnima Singh</div></td>
+              <td>Program Manager</td>
+              <td>8 of 8</td>
+              <td><div class="progress-wrap"><div class="progress-bar pb-orange" style="width:100%;"></div></div><span style="font-size:11px;">All active</span></td>
+            </tr>
+            <tr>
+              <td><div class="person"><div class="avatar av-r">DO</div> Donald</div></td>
+              <td>Collaborator</td>
+              <td>1 (PCF input)</td>
+              <td><div class="progress-wrap"><div class="progress-bar pb-blue" style="width:15%;"></div></div><span style="font-size:11px;">Awaiting</span></td>
+            </tr>
+            <tr>
+              <td><div class="person"><div class="avatar av-g">MI</div> Micky</div></td>
+              <td>Collaborator</td>
+              <td>1 (PCF input)</td>
+              <td><div class="progress-wrap"><div class="progress-bar pb-blue" style="width:15%;"></div></div><span style="font-size:11px;">Awaiting</span></td>
+            </tr>
+            <tr>
+              <td><div class="person"><div class="avatar av-p">MN</div> Minnie</div></td>
+              <td>Internal</td>
+              <td>1 (follow-up mtg)</td>
+              <td><div class="progress-wrap"><div class="progress-bar pb-blue" style="width:10%;"></div></div><span style="font-size:11px;">Pending</span></td>
+            </tr>
+            <tr>
+              <td><div class="person"><div class="avatar av-o">PI</div> PI</div></td>
+              <td>Supervisor</td>
+              <td>Review / approval</td>
+              <td><div class="progress-wrap"><div class="progress-bar pb-green" style="width:30%;"></div></div><span style="font-size:11px;">Light</span></td>
+            </tr>
+            <tr>
+              <td><div class="person"><div class="avatar av-r">XY</div> XYZ Contact</div></td>
+              <td>External</td>
+              <td>1 (complete proposal)</td>
+              <td><div class="progress-wrap"><div class="progress-bar pb-orange" style="width:60%;"></div></div><span style="font-size:11px;">Blocking</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">📌 Tasks by Category</div>
+        <table class="assign-table">
+          <thead><tr><th>Category</th><th>Count</th><th>Priority</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="cat"><div class="dot dot-grant"></div>Grant Development</div></td>
+              <td>2</td>
+              <td><span class="badge badge-high">High</span></td>
+              <td><span class="badge badge-notstart">Not Started</span></td>
+            </tr>
+            <tr>
+              <td><div class="cat"><div class="dot dot-ext"></div>External Collaboration</div></td>
+              <td>1</td>
+              <td><span class="badge badge-high">High</span></td>
+              <td><span class="badge badge-progress">In Progress</span></td>
+            </tr>
+            <tr>
+              <td><div class="cat"><div class="dot dot-int"></div>Internal Coordination</div></td>
+              <td>2</td>
+              <td><span class="badge badge-high">High</span> / <span class="badge badge-medium">Med</span></td>
+              <td><span class="badge badge-progress">In Progress</span></td>
+            </tr>
+            <tr>
+              <td><div class="cat"><div class="dot dot-comm"></div>Communications</div></td>
+              <td>1</td>
+              <td><span class="badge badge-medium">Medium</span></td>
+              <td><span class="badge badge-notstart">Not Started</span></td>
+            </tr>
+            <tr>
+              <td><div class="cat"><div class="dot dot-event"></div>External Event</div></td>
+              <td>1</td>
+              <td><span class="badge badge-medium">Medium</span></td>
+              <td><span class="badge badge-notstart">Not Started</span></td>
+            </tr>
+            <tr>
+              <td><div class="cat"><div class="dot dot-res"></div>Research</div></td>
+              <td>1</td>
+              <td><span class="badge badge-medium">Medium</span></td>
+              <td><span class="badge badge-notstart">Not Started</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">⏰ Deadline Summary</div>
+      <table class="assign-table">
+        <thead><tr><th>Due Date</th><th>Task</th><th>Owner</th><th>Priority</th><th>Status</th><th>Days Remaining</th></tr></thead>
+        <tbody>
+          <tr><td><span class="due-soon">Mar 07</span></td><td>Circulate meeting minutes</td><td>Sumnima</td><td><span class="badge badge-high">High</span></td><td><span class="badge badge-progress">In Progress</span></td><td style="color:#a4262c;font-weight:600;">1 day</td></tr>
+          <tr><td><span class="due-soon">Mar 09</span></td><td>Company XYZ proposal follow-up</td><td>Sumnima</td><td><span class="badge badge-high">High</span></td><td><span class="badge badge-progress">In Progress</span></td><td style="color:#a4262c;font-weight:600;">3 days</td></tr>
+          <tr><td><span class="due-soon">Mar 09</span></td><td>Schedule meeting — Minnie</td><td>Sumnima</td><td><span class="badge badge-medium">Medium</span></td><td><span class="badge badge-notstart">Not Started</span></td><td style="color:#a4262c;font-weight:600;">3 days</td></tr>
+          <tr><td><span class="due-norm">Mar 11</span></td><td>PCF grant outreach</td><td>Sumnima</td><td><span class="badge badge-high">High</span></td><td><span class="badge badge-notstart">Not Started</span></td><td>5 days</td></tr>
+          <tr><td><span class="due-norm">Mar 11</span></td><td>ASCO save-the-date</td><td>Sumnima</td><td><span class="badge badge-medium">Medium</span></td><td><span class="badge badge-notstart">Not Started</span></td><td>5 days</td></tr>
+          <tr><td><span class="due-norm">Mar 13</span></td><td>Quarterly newsletter</td><td>Sumnima</td><td><span class="badge badge-medium">Medium</span></td><td><span class="badge badge-notstart">Not Started</span></td><td>7 days</td></tr>
+          <tr><td><span class="due-norm">Mar 20</span></td><td>Advance new Melanoma project proposal</td><td>Sumnima</td><td><span class="badge badge-high">High</span></td><td><span class="badge badge-notstart">Not Started</span></td><td>14 days</td></tr>
+          <tr><td><span class="due-ok">Apr 06</span></td><td>Lung Cancer results meeting (next month)</td><td>Sumnima</td><td><span class="badge badge-medium">Medium</span></td><td><span class="badge badge-notstart">Not Started</span></td><td class="due-ok">31 days</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- TAB 4: COMMUNICATION LOG -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div id="tab-commlog" class="tab-content">
+    <div class="panel-section">
+      <div class="panel-title">📨 Communication Log <span style="margin-left:auto;font-weight:400;font-size:11px;color:#605e5c;">All external &amp; key internal contacts</span></div>
+      <table class="list-table">
+        <thead><tr>
+          <th>Date</th><th>Project</th><th>Contact</th><th>Organization</th>
+          <th>Channel</th><th>Summary</th><th>Follow-up?</th><th>Follow-up Date</th><th>Outcome</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td>Mar 06</td>
+            <td>Company XYZ</td>
+            <td><div class="person"><div class="avatar av-r">XY</div> XYZ Contact</div></td>
+            <td>Company XYZ</td>
+            <td><span class="channel-chip">📧 Email received</span></td>
+            <td>Proposal submission received — multiple sections incomplete</td>
+            <td><span class="followup-yes">Yes</span></td>
+            <td><span class="due-soon">Mar 09</span></td>
+            <td>Pending reply</td>
+          </tr>
+          <tr>
+            <td>Pending</td>
+            <td>PCF Grant</td>
+            <td><div class="person"><div class="avatar av-r">DO</div> Donald</div></td>
+            <td>Collaborating institution</td>
+            <td><span class="channel-chip">📤 To send</span></td>
+            <td>Initial outreach re: PCF grant collaboration interest</td>
+            <td><span class="followup-yes">Yes</span></td>
+            <td><span class="due-soon">Mar 11</span></td>
+            <td>Not initiated</td>
+          </tr>
+          <tr>
+            <td>Pending</td>
+            <td>PCF Grant</td>
+            <td><div class="person"><div class="avatar av-g">MI</div> Micky</div></td>
+            <td>Collaborating institution</td>
+            <td><span class="channel-chip">📤 To send</span></td>
+            <td>Initial outreach re: PCF grant collaboration interest</td>
+            <td><span class="followup-yes">Yes</span></td>
+            <td><span class="due-soon">Mar 11</span></td>
+            <td>Not initiated</td>
+          </tr>
+          <tr>
+            <td>Pending</td>
+            <td>Minnie follow-up</td>
+            <td><div class="person"><div class="avatar av-p">MN</div> Minnie</div></td>
+            <td>Internal</td>
+            <td><span class="channel-chip">📅 Calendar invite</span></td>
+            <td>Follow-up meeting to be scheduled</td>
+            <td><span class="followup-yes">Yes</span></td>
+            <td><span class="due-soon">Mar 09</span></td>
+            <td>Not scheduled</td>
+          </tr>
+          <tr>
+            <td>Pending</td>
+            <td>ASCO</td>
+            <td><div class="person"><div class="avatar">TM</div> Full team</div></td>
+            <td>Internal</td>
+            <td><span class="channel-chip">📧 Email blast</span></td>
+            <td>Save-the-date for ASCO group scientific meeting</td>
+            <td><span class="followup-yes">Yes</span></td>
+            <td><span class="due-norm">Mar 11</span></td>
+            <td>Not sent</td>
+          </tr>
+          <tr>
+            <td>Pending</td>
+            <td>Lung Cancer project</td>
+            <td><div class="person"><div class="avatar av-o">AT</div> Analysis team</div></td>
+            <td>Internal</td>
+            <td><span class="channel-chip">📅 Meeting invite</span></td>
+            <td>Results presentation — confirm analysis completion first</td>
+            <td><span class="followup-yes">Yes</span></td>
+            <td><span class="due-ok">Apr 06</span></td>
+            <td>Awaiting analysis</td>
+          </tr>
+          <tr style="background:#f7fbff;">
+            <td colspan="9" style="padding:6px 10px;font-size:11px;color:#605e5c;font-style:italic;">+ Add new communication entry...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">📊 Follow-up Summary</div>
+      <div style="padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap;font-size:12px;">
+        <div><span style="font-size:22px;font-weight:700;color:#a4262c;">4</span><div style="color:#605e5c;font-size:11px;">Overdue / Due this week</div></div>
+        <div><span style="font-size:22px;font-weight:700;color:#ca5010;">2</span><div style="color:#605e5c;font-size:11px;">Due next week</div></div>
+        <div><span style="font-size:22px;font-weight:700;color:#107c10;">1</span><div style="color:#605e5c;font-size:11px;">Longer horizon</div></div>
+        <div><span style="font-size:22px;font-weight:700;color:#0078d4;">6</span><div style="color:#605e5c;font-size:11px;">Total open follow-ups</div></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">⚡ Power Automate — Automated Reminders</div>
+      <div style="padding:12px 16px;font-size:12px;line-height:1.8;color:#323130;">
+        The following automations are active via Power Automate, integrated with this SharePoint list:<br>
+        <strong>2 days before follow-up date:</strong> Email reminder sent to task owner (Sumnima)<br>
+        <strong>On due date:</strong> Teams notification posted to the program channel<br>
+        <strong>3 days after due date with no status update:</strong> Escalation alert to PI<br>
+        <strong>When status changes to Complete:</strong> Auto-log timestamp and notify relevant collaborators
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+function switchView(v) {
+  ['list','board','gantt-list','calendar'].forEach(id => {
+    const el = document.getElementById('view-' + id);
+    if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById('view-' + (v === 'gantt' ? 'gantt-list' : v));
+  if (target) target.style.display = 'block';
+  document.querySelectorAll('.view-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['list','board','gantt','calendar'][i] === v);
+  });
+}
+function switchTab(t) {
+  ['tracker','timeline','assignments','commlog'].forEach(id => {
+    document.getElementById('tab-' + id).classList.toggle('active', id === t);
+  });
+  document.querySelectorAll('.page-tab').forEach((tab, i) => {
+    tab.classList.toggle('active', ['tracker','timeline','assignments','commlog'][i] === t);
+  });
+}
+</script>
+</body>
+</html>
